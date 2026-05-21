@@ -752,7 +752,7 @@ export default function Index() {
                     >
                       Checkout 💳
                     </button>
-                    <p className="text-center text-xs text-gray-300 mt-2 font-semibold">Free shipping on orders over $25!</p>
+                    <p className="text-center text-sm text-green-500 mt-2 font-black">🚚 Free Shipping on every order!</p>
                   </div>
                 </>
               )}
