@@ -286,7 +286,7 @@ export default function Index() {
               <span className="shimmer-text">SQUISHALISH</span>
             </h1>
             <p className="text-gray-500 text-lg max-w-md mx-auto font-semibold mb-6">
-              Squishy, stretchy, satisfying slimes made by <span className="text-pink-400">Squisha Lish</span> 💕
+              Squishy, stretchy, satisfying slimes made by <span className="text-pink-400">Sophia</span> 💕
             </p>
             <button
               onClick={() => { setSection("build"); resetBuilder(); }}
