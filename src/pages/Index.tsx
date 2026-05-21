@@ -118,6 +118,17 @@ const SCENTS = [
 
 type CartItem = { id: number; name: string; price: number; emoji: string; qty: number };
 type Section = "shop" | "build" | "cart" | "about";
+type CartView = "items" | "checkout" | "confirmed";
+
+interface ShippingForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+}
 
 interface CustomSlime {
   base: string;
@@ -134,6 +145,13 @@ export default function Index() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [addedId, setAddedId] = useState<number | null>(null);
   const [customAdded, setCustomAdded] = useState(false);
+  const [cartView, setCartView] = useState<CartView>("items");
+  const [orderNum, setOrderNum] = useState("");
+  const [form, setForm] = useState<ShippingForm>({
+    firstName: "", lastName: "", email: "",
+    address: "", city: "", state: "", zip: "",
+  });
+  const [formErrors, setFormErrors] = useState<Partial<ShippingForm>>({});
 
   // Builder state
   const [step, setStep] = useState(0);
@@ -193,6 +211,32 @@ export default function Index() {
     );
   };
 
+  const validateForm = () => {
+    const errors: Partial<ShippingForm> = {};
+    if (!form.firstName.trim()) errors.firstName = "Required";
+    if (!form.lastName.trim()) errors.lastName = "Required";
+    if (!form.email.trim() || !form.email.includes("@")) errors.email = "Valid email required";
+    if (!form.address.trim()) errors.address = "Required";
+    if (!form.city.trim()) errors.city = "Required";
+    if (!form.state.trim()) errors.state = "Required";
+    if (!form.zip.trim()) errors.zip = "Required";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handlePlaceOrder = () => {
+    if (!validateForm()) return;
+    const num = "#SQ" + Math.floor(10000 + Math.random() * 90000);
+    setOrderNum(num);
+    setCartView("confirmed");
+    setCart([]);
+  };
+
+  const setField = (k: keyof ShippingForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((p) => ({ ...p, [k]: e.target.value }));
+    setFormErrors((p) => ({ ...p, [k]: undefined }));
+  };
+
   const toggleAddin = (id: string) => {
     setCustom((prev) => ({
       ...prev,
@@ -250,7 +294,7 @@ export default function Index() {
             {(["shop", "build", "cart", "about"] as Section[]).map((s) => (
               <button
                 key={s}
-                onClick={() => { setSection(s); if (s === "build") resetBuilder(); }}
+                onClick={() => { setSection(s); if (s === "build") resetBuilder(); if (s === "cart") setCartView("items"); }}
                 className={`relative px-3 py-1.5 rounded-full text-sm font-bold transition-all btn-slime ${
                   section === s
                     ? "bg-gradient-to-r from-pink-400 via-blue-400 to-green-400 text-white shadow-md"
@@ -632,70 +676,198 @@ export default function Index() {
       {/* ─── CART ─── */}
       {section === "cart" && (
         <div className="relative z-10 max-w-2xl mx-auto px-4 py-12">
-          <h2 style={{ fontFamily: "'Pacifico', cursive" }} className="text-4xl text-center mb-8 shimmer-text">
-            Your Cart 🛒
-          </h2>
 
-          {cart.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-6xl mb-4 float">🫧</div>
-              <p className="text-gray-400 font-bold text-lg">Your cart is empty!</p>
+          {/* CONFIRMED */}
+          {cartView === "confirmed" && (
+            <div className="text-center py-10">
+              <div className="text-7xl mb-4 float">🎉</div>
+              <h2 style={{ fontFamily: "'Pacifico', cursive" }} className="text-4xl shimmer-text mb-2">Order Placed!</h2>
+              <p className="text-gray-500 font-bold mb-1">Your order <span className="text-pink-400 font-black">{orderNum}</span> is confirmed!</p>
+              <p className="text-gray-400 font-semibold mb-6">Sophia will email you at <span className="text-blue-400">{form.email}</span> with updates 💌</p>
+              <div className="bg-white rounded-3xl p-6 border-2 border-pink-100 shadow-sm text-left mb-6">
+                <p className="font-black text-gray-700 mb-3">📦 Shipping to:</p>
+                <p className="text-gray-600 font-semibold">{form.firstName} {form.lastName}</p>
+                <p className="text-gray-500 font-semibold">{form.address}</p>
+                <p className="text-gray-500 font-semibold">{form.city}, {form.state} {form.zip}</p>
+              </div>
               <button
-                onClick={() => setSection("shop")}
-                className="mt-4 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-blue-400 text-white font-black btn-slime shadow-md"
+                onClick={() => { setCartView("items"); setSection("shop"); setForm({ firstName: "", lastName: "", email: "", address: "", city: "", state: "", zip: "" }); }}
+                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-pink-400 via-blue-400 to-green-400 text-white font-black text-lg btn-slime shadow-lg"
               >
-                Shop Now ✨
+                Keep Shopping ✨
               </button>
             </div>
-          ) : (
+          )}
+
+          {/* CART ITEMS */}
+          {cartView === "items" && (
             <>
-              <div className="space-y-3 mb-6">
-                {cart.map((item) => (
-                  <div key={item.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm border border-pink-100">
-                    <span className="text-3xl float">{item.emoji}</span>
-                    <div className="flex-1">
-                      <p className="font-black text-gray-800">{item.name}</p>
-                      <p className="text-pink-400 font-bold">${item.price.toFixed(2)} each</p>
+              <h2 style={{ fontFamily: "'Pacifico', cursive" }} className="text-4xl text-center mb-8 shimmer-text">
+                Your Cart 🛒
+              </h2>
+              {cart.length === 0 ? (
+                <div className="text-center py-20">
+                  <div className="text-6xl mb-4 float">🫧</div>
+                  <p className="text-gray-400 font-bold text-lg">Your cart is empty!</p>
+                  <button
+                    onClick={() => setSection("shop")}
+                    className="mt-4 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-pink-400 to-blue-400 text-white font-black btn-slime shadow-md"
+                  >
+                    Shop Now ✨
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3 mb-6">
+                    {cart.map((item) => (
+                      <div key={item.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm border border-pink-100">
+                        <span className="text-3xl float">{item.emoji}</span>
+                        <div className="flex-1">
+                          <p className="font-black text-gray-800">{item.name}</p>
+                          <p className="text-pink-400 font-bold">${item.price.toFixed(2)} each</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 rounded-full bg-pink-100 text-pink-500 font-black hover:bg-pink-200 transition-colors">−</button>
+                          <span className="font-black text-gray-800 w-5 text-center">{item.qty}</span>
+                          <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 rounded-full bg-green-100 text-green-600 font-black hover:bg-green-200 transition-colors">+</button>
+                        </div>
+                        <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-400 transition-colors ml-2">
+                          <Icon name="X" size={18} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-white rounded-3xl p-6 shadow-sm border-2 border-pink-100">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-400 font-bold">Items</span>
+                      <span className="font-bold text-gray-700">{totalItems}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => updateQty(item.id, -1)}
-                        className="w-7 h-7 rounded-full bg-pink-100 text-pink-500 font-black hover:bg-pink-200 transition-colors"
-                      >
-                        −
-                      </button>
-                      <span className="font-black text-gray-800 w-5 text-center">{item.qty}</span>
-                      <button
-                        onClick={() => updateQty(item.id, 1)}
-                        className="w-7 h-7 rounded-full bg-green-100 text-green-600 font-black hover:bg-green-200 transition-colors"
-                      >
-                        +
-                      </button>
+                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-pink-50">
+                      <span className="text-gray-400 font-bold">Subtotal</span>
+                      <span className="font-black text-gray-800 text-xl">${totalPrice.toFixed(2)}</span>
                     </div>
                     <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="text-gray-300 hover:text-red-400 transition-colors ml-2"
+                      onClick={() => setCartView("checkout")}
+                      className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-400 via-blue-400 to-green-400 text-white font-black text-lg btn-slime shadow-lg"
                     >
-                      <Icon name="X" size={18} />
+                      Checkout 💳
                     </button>
+                    <p className="text-center text-xs text-gray-300 mt-2 font-semibold">Free shipping on orders over $25!</p>
                   </div>
-                ))}
+                </>
+              )}
+            </>
+          )}
+
+          {/* CHECKOUT FORM */}
+          {cartView === "checkout" && (
+            <>
+              <div className="flex items-center gap-3 mb-8">
+                <button onClick={() => setCartView("items")} className="text-gray-400 hover:text-pink-400 transition-colors">
+                  <Icon name="ChevronLeft" size={20} />
+                </button>
+                <h2 style={{ fontFamily: "'Pacifico', cursive" }} className="text-3xl shimmer-text">Shipping Info 📦</h2>
               </div>
 
-              <div className="bg-white rounded-3xl p-6 shadow-sm border-2 border-pink-100">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-400 font-bold">Items</span>
-                  <span className="font-bold text-gray-700">{totalItems}</span>
+              <div className="bg-white rounded-3xl p-6 shadow-sm border-2 border-pink-100 mb-4">
+                <p className="font-black text-gray-600 mb-4">Where should we send your slimes? 🫧</p>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="text-xs font-black text-gray-500 mb-1 block">First Name</label>
+                    <input
+                      value={form.firstName} onChange={setField("firstName")}
+                      placeholder="Sophia"
+                      className={`w-full px-4 py-2.5 rounded-2xl border-2 font-bold text-gray-700 text-sm focus:outline-none bg-pink-50 ${formErrors.firstName ? "border-red-300" : "border-pink-200 focus:border-pink-400"}`}
+                    />
+                    {formErrors.firstName && <p className="text-xs text-red-400 font-bold mt-1">{formErrors.firstName}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs font-black text-gray-500 mb-1 block">Last Name</label>
+                    <input
+                      value={form.lastName} onChange={setField("lastName")}
+                      placeholder="Jayde"
+                      className={`w-full px-4 py-2.5 rounded-2xl border-2 font-bold text-gray-700 text-sm focus:outline-none bg-pink-50 ${formErrors.lastName ? "border-red-300" : "border-pink-200 focus:border-pink-400"}`}
+                    />
+                    {formErrors.lastName && <p className="text-xs text-red-400 font-bold mt-1">{formErrors.lastName}</p>}
+                  </div>
                 </div>
-                <div className="flex justify-between items-center mb-4 pb-4 border-b border-pink-50">
-                  <span className="text-gray-400 font-bold">Subtotal</span>
-                  <span className="font-black text-gray-800 text-xl">${totalPrice.toFixed(2)}</span>
+
+                <div className="mb-3">
+                  <label className="text-xs font-black text-gray-500 mb-1 block">Email</label>
+                  <input
+                    type="email" value={form.email} onChange={setField("email")}
+                    placeholder="you@example.com"
+                    className={`w-full px-4 py-2.5 rounded-2xl border-2 font-bold text-gray-700 text-sm focus:outline-none bg-pink-50 ${formErrors.email ? "border-red-300" : "border-pink-200 focus:border-pink-400"}`}
+                  />
+                  {formErrors.email && <p className="text-xs text-red-400 font-bold mt-1">{formErrors.email}</p>}
                 </div>
-                <button className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-400 via-blue-400 to-green-400 text-white font-black text-lg btn-slime shadow-lg">
-                  Checkout 💳
-                </button>
-                <p className="text-center text-xs text-gray-300 mt-2 font-semibold">Free shipping on orders over $25!</p>
+
+                <div className="mb-3">
+                  <label className="text-xs font-black text-gray-500 mb-1 block">Street Address</label>
+                  <input
+                    value={form.address} onChange={setField("address")}
+                    placeholder="123 Slime Lane"
+                    className={`w-full px-4 py-2.5 rounded-2xl border-2 font-bold text-gray-700 text-sm focus:outline-none bg-pink-50 ${formErrors.address ? "border-red-300" : "border-pink-200 focus:border-pink-400"}`}
+                  />
+                  {formErrors.address && <p className="text-xs text-red-400 font-bold mt-1">{formErrors.address}</p>}
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-1">
+                    <label className="text-xs font-black text-gray-500 mb-1 block">City</label>
+                    <input
+                      value={form.city} onChange={setField("city")}
+                      placeholder="Miami"
+                      className={`w-full px-4 py-2.5 rounded-2xl border-2 font-bold text-gray-700 text-sm focus:outline-none bg-pink-50 ${formErrors.city ? "border-red-300" : "border-pink-200 focus:border-pink-400"}`}
+                    />
+                    {formErrors.city && <p className="text-xs text-red-400 font-bold mt-1">{formErrors.city}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs font-black text-gray-500 mb-1 block">State</label>
+                    <input
+                      value={form.state} onChange={setField("state")}
+                      placeholder="FL"
+                      maxLength={2}
+                      className={`w-full px-4 py-2.5 rounded-2xl border-2 font-bold text-gray-700 text-sm focus:outline-none bg-pink-50 ${formErrors.state ? "border-red-300" : "border-pink-200 focus:border-pink-400"}`}
+                    />
+                    {formErrors.state && <p className="text-xs text-red-400 font-bold mt-1">{formErrors.state}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs font-black text-gray-500 mb-1 block">ZIP</label>
+                    <input
+                      value={form.zip} onChange={setField("zip")}
+                      placeholder="33101"
+                      maxLength={10}
+                      className={`w-full px-4 py-2.5 rounded-2xl border-2 font-bold text-gray-700 text-sm focus:outline-none bg-pink-50 ${formErrors.zip ? "border-red-300" : "border-pink-200 focus:border-pink-400"}`}
+                    />
+                    {formErrors.zip && <p className="text-xs text-red-400 font-bold mt-1">{formErrors.zip}</p>}
+                  </div>
+                </div>
               </div>
+
+              {/* Order summary */}
+              <div className="bg-white rounded-3xl p-5 shadow-sm border-2 border-pink-100 mb-4">
+                <p className="font-black text-gray-600 mb-3 text-sm">Order Summary</p>
+                {cart.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-500 font-semibold">{item.emoji} {item.name} × {item.qty}</span>
+                    <span className="font-black text-gray-700">${(item.price * item.qty).toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between text-base pt-3 border-t border-pink-50 mt-2">
+                  <span className="font-black text-gray-700">Total</span>
+                  <span className="font-black text-pink-500 text-lg">${totalPrice.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handlePlaceOrder}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 text-white font-black text-lg btn-slime shadow-lg"
+              >
+                Place Order 🎉
+              </button>
+              <p className="text-center text-xs text-gray-300 mt-2 font-semibold">Sophia will reach out to arrange payment 💕</p>
             </>
           )}
         </div>
