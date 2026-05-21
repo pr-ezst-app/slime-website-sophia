@@ -1,5 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+
+const API = {
+  placeOrder: "https://functions.poehali.dev/1c1c62b8-f419-4e34-a373-63ddc5e0a563",
+  getOrders: "https://functions.poehali.dev/6c0643a6-9b77-469c-a347-09b7467c16c4",
+  completeOrder: "https://functions.poehali.dev/a9fae3b1-8c8e-460f-b3bd-6c5cbd467576",
+  getOrderCounts: "https://functions.poehali.dev/be8495f1-f49c-446d-9085-c617d98c12ee",
+};
 
 const PRODUCTS = [
   {
@@ -117,7 +124,7 @@ const SCENTS = [
 ];
 
 type CartItem = { id: number; name: string; price: number; emoji: string; qty: number };
-type Section = "shop" | "build" | "cart" | "about";
+type Section = "shop" | "build" | "cart" | "about" | "admin";
 type CartView = "items" | "checkout" | "confirmed";
 
 interface ShippingForm {
@@ -128,6 +135,21 @@ interface ShippingForm {
   city: string;
   state: string;
   zip: string;
+}
+
+interface AdminOrder {
+  id: number;
+  orderNumber: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  items: { name: string; emoji: string; qty: number; price: number }[];
+  total: number;
+  createdAt: string;
 }
 
 interface CustomSlime {
@@ -152,6 +174,51 @@ export default function Index() {
     address: "", city: "", state: "", zip: "",
   });
   const [formErrors, setFormErrors] = useState<Partial<ShippingForm>>({});
+  const [placingOrder, setPlacingOrder] = useState(false);
+
+  // Order counts for shop badges
+  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
+
+  // Admin
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminAuthed, setAdminAuthed] = useState(false);
+  const [adminError, setAdminError] = useState("");
+  const [adminOrders, setAdminOrders] = useState<AdminOrder[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [completingId, setCompletingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(API.getOrderCounts)
+      .then((r) => r.json())
+      .then((d) => setOrderCounts(d.counts || {}))
+      .catch(() => {});
+  }, []);
+
+  const loadAdminOrders = async (pwd: string) => {
+    setAdminLoading(true);
+    const res = await fetch(API.getOrders, { headers: { "X-Admin-Password": pwd } });
+    if (res.status === 401) { setAdminError("Wrong password!"); setAdminLoading(false); return; }
+    const data = await res.json();
+    setAdminOrders(data.orders || []);
+    setAdminAuthed(true);
+    setAdminError("");
+    setAdminLoading(false);
+  };
+
+  const handleAdminLogin = () => loadAdminOrders(adminPassword);
+
+  const handleCompleteOrder = async (orderId: number) => {
+    setCompletingId(orderId);
+    await fetch(API.completeOrder, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Admin-Password": adminPassword },
+      body: JSON.stringify({ orderId }),
+    });
+    setAdminOrders((prev) => prev.filter((o) => o.id !== orderId));
+    setCompletingId(null);
+    // Refresh counts
+    fetch(API.getOrderCounts).then((r) => r.json()).then((d) => setOrderCounts(d.counts || {})).catch(() => {});
+  };
 
   // Builder state
   const [step, setStep] = useState(0);
@@ -224,10 +291,30 @@ export default function Index() {
     return Object.keys(errors).length === 0;
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!validateForm()) return;
+    setPlacingOrder(true);
     const num = "#SQ" + Math.floor(10000 + Math.random() * 90000);
+    await fetch(API.placeOrder, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderNumber: num,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        address: form.address,
+        city: form.city,
+        state: form.state,
+        zip: form.zip,
+        items: cart.map((i) => ({ name: i.name, emoji: i.emoji, qty: i.qty, price: i.price })),
+        subtotal: totalPrice,
+      }),
+    }).catch(() => {});
+    // Refresh order counts
+    fetch(API.getOrderCounts).then((r) => r.json()).then((d) => setOrderCounts(d.counts || {})).catch(() => {});
     setOrderNum(num);
+    setPlacingOrder(false);
     setCartView("confirmed");
     setCart([]);
   };
@@ -283,7 +370,7 @@ export default function Index() {
       {/* NAV */}
       <nav className="relative z-10 sticky top-0 backdrop-blur-md bg-white/70 border-b border-pink-100 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setSection("admin")}>
             <span className="text-2xl float">🫧</span>
             <span className="text-sm font-black shimmer-text">
               squishalishslime@gmail.com
@@ -291,7 +378,7 @@ export default function Index() {
           </div>
 
           <div className="flex items-center gap-1 flex-wrap justify-end">
-            {(["shop", "build", "cart", "about"] as Section[]).map((s) => (
+            {(["shop", "build", "cart", "about", "admin"] as Section[]).filter(s => s !== "admin").map((s) => (
               <button
                 key={s}
                 onClick={() => { setSection(s); if (s === "build") resetBuilder(); if (s === "cart") setCartView("items"); }}
@@ -312,7 +399,8 @@ export default function Index() {
                   </span>
                 ) : s === "shop" ? "🛍️ Shop"
                   : s === "build" ? "🎨 Build"
-                  : "💌 About"}
+                  : s === "about" ? "💌 About"
+                  : null}
               </button>
             ))}
           </div>
@@ -362,6 +450,11 @@ export default function Index() {
                       <span className="absolute top-3 right-3 text-2xl float" style={{ animationDelay: `${i * 0.3}s` }}>
                         {p.emoji}
                       </span>
+                      {orderCounts[p.name] > 0 && (
+                        <span className="absolute bottom-3 right-3 bg-pink-500 text-white text-xs font-black px-2.5 py-1 rounded-full shadow-lg">
+                          {orderCounts[p.name]} order{orderCounts[p.name] > 1 ? "s" : ""}
+                        </span>
+                      )}
                     </div>
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-1">
@@ -875,9 +968,10 @@ export default function Index() {
 
               <button
                 onClick={handlePlaceOrder}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 text-white font-black text-lg btn-slime shadow-lg"
+                disabled={placingOrder}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 text-white font-black text-lg btn-slime shadow-lg disabled:opacity-70"
               >
-                Place Order 🎉
+                {placingOrder ? "Placing Order... 🫧" : "Place Order 🎉"}
               </button>
               <p className="text-center text-xs text-gray-300 mt-2 font-semibold">Sophia will reach out to arrange payment 💕</p>
             </>
@@ -941,6 +1035,90 @@ export default function Index() {
               Shop the Slimes! ✨
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ─── ADMIN ─── */}
+      {section === "admin" && (
+        <div className="relative z-10 max-w-2xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-3 mb-8">
+            <button onClick={() => setSection("shop")} className="text-gray-400 hover:text-pink-400 transition-colors">
+              <Icon name="ChevronLeft" size={20} />
+            </button>
+            <h2 style={{ fontFamily: "'Pacifico', cursive" }} className="text-3xl shimmer-text">My Orders 🫧</h2>
+          </div>
+
+          {!adminAuthed ? (
+            <div className="bg-white rounded-3xl p-8 border-2 border-pink-100 shadow-sm text-center">
+              <div className="text-4xl mb-4 float">🔒</div>
+              <p className="font-black text-gray-700 mb-4">Enter your admin password</p>
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAdminLogin()}
+                placeholder="Password..."
+                className="w-full px-4 py-3 rounded-2xl border-2 border-pink-200 text-gray-700 font-bold text-base focus:outline-none focus:border-pink-400 bg-pink-50 mb-3"
+              />
+              {adminError && <p className="text-red-400 font-bold text-sm mb-3">{adminError}</p>}
+              <button
+                onClick={handleAdminLogin}
+                disabled={adminLoading}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-400 to-purple-400 text-white font-black btn-slime shadow-md"
+              >
+                {adminLoading ? "Loading..." : "View Orders 🔓"}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <p className="font-black text-gray-600">{adminOrders.length} pending order{adminOrders.length !== 1 ? "s" : ""}</p>
+                <button onClick={() => loadAdminOrders(adminPassword)} className="text-xs text-pink-400 font-black hover:text-pink-500">
+                  Refresh ↻
+                </button>
+              </div>
+
+              {adminOrders.length === 0 ? (
+                <div className="text-center py-16 bg-white rounded-3xl border-2 border-pink-100">
+                  <div className="text-5xl mb-3 float">🎉</div>
+                  <p className="font-black text-gray-500">All caught up! No pending orders.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {adminOrders.map((order) => (
+                    <div key={order.id} className="bg-white rounded-3xl p-5 border-2 border-pink-100 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-black text-pink-400">{order.orderNumber}</span>
+                        <span className="text-xs text-gray-400 font-bold">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <p className="font-black text-gray-800 mb-1">{order.firstName} {order.lastName}</p>
+                      <p className="text-sm text-blue-400 font-bold mb-2">{order.email}</p>
+                      <p className="text-sm text-gray-500 font-semibold mb-3">📦 {order.address}, {order.city}, {order.state} {order.zip}</p>
+                      <div className="space-y-1 mb-4">
+                        {order.items.map((item: { name: string; emoji: string; qty: number; price: number }, idx: number) => (
+                          <div key={idx} className="flex justify-between text-sm bg-pink-50 rounded-xl px-3 py-1.5">
+                            <span className="font-bold text-gray-700">{item.emoji} {item.name} × {item.qty}</span>
+                            <span className="font-black text-gray-700">${(item.price * item.qty).toFixed(2)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between text-sm px-3 pt-1">
+                          <span className="font-black text-gray-600">Total (incl. shipping)</span>
+                          <span className="font-black text-pink-500">${order.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleCompleteOrder(order.id)}
+                        disabled={completingId === order.id}
+                        className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-green-400 to-green-500 text-white font-black btn-slime shadow-md disabled:opacity-60"
+                      >
+                        {completingId === order.id ? "Sending email... 💌" : "✓ Done — Notify Customer"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

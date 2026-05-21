@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Get order counts",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"counts": {}},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

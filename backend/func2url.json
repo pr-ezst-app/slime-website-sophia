@@ -1,0 +1,6 @@
+{
+  "place-order": "https://functions.poehali.dev/1c1c62b8-f419-4e34-a373-63ddc5e0a563",
+  "complete-order": "https://functions.poehali.dev/a9fae3b1-8c8e-460f-b3bd-6c5cbd467576",
+  "get-order-counts": "https://functions.poehali.dev/be8495f1-f49c-446d-9085-c617d98c12ee",
+  "get-orders": "https://functions.poehali.dev/6c0643a6-9b77-469c-a347-09b7467c16c4"
+}
