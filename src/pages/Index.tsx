@@ -6,7 +6,7 @@ const PRODUCTS = [
     id: 1,
     name: "Ocean Dream",
     type: "Glitter Slime",
-    price: 8.99,
+    price: 5.00,
     color: "blue",
     emoji: "💙",
     img: "https://cdn.ezst.app/projects/0e0e4841-765c-4695-83b6-0e5f4a71e3a0/files/a8df0f49-6664-461e-b5da-11814b0c9e64.jpg",
@@ -18,7 +18,7 @@ const PRODUCTS = [
     id: 2,
     name: "Minty Fresh",
     type: "Fluffy Slime",
-    price: 7.99,
+    price: 5.00,
     color: "green",
     emoji: "💚",
     img: "https://cdn.ezst.app/projects/0e0e4841-765c-4695-83b6-0e5f4a71e3a0/files/4e9cb100-8b40-41b7-b1b7-bec7242a7c40.jpg",
@@ -30,7 +30,7 @@ const PRODUCTS = [
     id: 3,
     name: "Cotton Candy",
     type: "Butter Slime",
-    price: 9.99,
+    price: 5.00,
     color: "pink",
     emoji: "🩷",
     img: "https://cdn.ezst.app/projects/0e0e4841-765c-4695-83b6-0e5f4a71e3a0/files/505c40b7-94b5-4711-a98f-ea83d49f3ab1.jpg",
@@ -42,7 +42,7 @@ const PRODUCTS = [
     id: 4,
     name: "Galaxy Swirl",
     type: "Clear Slime",
-    price: 10.99,
+    price: 5.00,
     color: "blue",
     emoji: "✨",
     img: "https://cdn.ezst.app/projects/0e0e4841-765c-4695-83b6-0e5f4a71e3a0/files/a8df0f49-6664-461e-b5da-11814b0c9e64.jpg",
@@ -54,7 +54,7 @@ const PRODUCTS = [
     id: 5,
     name: "Watermelon Pop",
     type: "Crunchy Slime",
-    price: 8.49,
+    price: 5.00,
     color: "green",
     emoji: "🍉",
     img: "https://cdn.ezst.app/projects/0e0e4841-765c-4695-83b6-0e5f4a71e3a0/files/4e9cb100-8b40-41b7-b1b7-bec7242a7c40.jpg",
@@ -66,7 +66,7 @@ const PRODUCTS = [
     id: 6,
     name: "Bubblegum Bliss",
     type: "Foam Slime",
-    price: 7.49,
+    price: 5.00,
     color: "pink",
     emoji: "🫧",
     img: "https://cdn.ezst.app/projects/0e0e4841-765c-4695-83b6-0e5f4a71e3a0/files/505c40b7-94b5-4711-a98f-ea83d49f3ab1.jpg",
@@ -127,7 +127,7 @@ interface CustomSlime {
   name: string;
 }
 
-const BASE_CUSTOM_PRICE = 8.99;
+const BASE_CUSTOM_PRICE = 7.00;
 
 export default function Index() {
   const [section, setSection] = useState<Section>("shop");
