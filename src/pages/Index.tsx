@@ -282,7 +282,7 @@ export default function Index() {
             <div className="inline-block mb-3 px-4 py-1 rounded-full bg-pink-100 text-pink-500 text-sm font-bold wiggle">
               ✨ Handmade with love ✨
             </div>
-            <h1 style={{ fontFamily: "'Pacifico', cursive" }} className="text-5xl sm:text-6xl mb-4 leading-tight">
+            <h1 className="text-5xl sm:text-6xl mb-4 leading-tight font-black tracking-tight">
               <span className="shimmer-text">SQUISHALISH</span>
             </h1>
             <p className="text-gray-500 text-lg max-w-md mx-auto font-semibold mb-6">
