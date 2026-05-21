@@ -742,9 +742,17 @@ export default function Index() {
                       <span className="text-gray-400 font-bold">Items</span>
                       <span className="font-bold text-gray-700">{totalItems}</span>
                     </div>
-                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-pink-50">
+                    <div className="flex justify-between items-center mb-1">
                       <span className="text-gray-400 font-bold">Subtotal</span>
-                      <span className="font-black text-gray-800 text-xl">${totalPrice.toFixed(2)}</span>
+                      <span className="font-black text-gray-700">${totalPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-pink-50">
+                      <span className="text-gray-400 font-bold">🚚 Shipping</span>
+                      <span className="font-black text-gray-700">$10.00</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="font-black text-gray-800">Total</span>
+                      <span className="font-black text-gray-800 text-xl">${(totalPrice + 10).toFixed(2)}</span>
                     </div>
                     <button
                       onClick={() => setCartView("checkout")}
@@ -752,7 +760,7 @@ export default function Index() {
                     >
                       Checkout 💳
                     </button>
-                    <p className="text-center text-sm text-green-500 mt-2 font-black">🚚 Free Shipping on every order!</p>
+                    <p className="text-center text-sm text-gray-400 mt-2 font-bold">🚚 $10.00 flat rate shipping</p>
                   </div>
                 </>
               )}
@@ -855,9 +863,13 @@ export default function Index() {
                     <span className="font-black text-gray-700">${(item.price * item.qty).toFixed(2)}</span>
                   </div>
                 ))}
-                <div className="flex justify-between text-base pt-3 border-t border-pink-50 mt-2">
+                <div className="flex justify-between text-sm mb-1 pt-3 border-t border-pink-50 mt-2">
+                  <span className="text-gray-400 font-bold">🚚 Shipping</span>
+                  <span className="font-black text-gray-700">$10.00</span>
+                </div>
+                <div className="flex justify-between text-base">
                   <span className="font-black text-gray-700">Total</span>
-                  <span className="font-black text-pink-500 text-lg">${totalPrice.toFixed(2)}</span>
+                  <span className="font-black text-pink-500 text-lg">${(totalPrice + 10).toFixed(2)}</span>
                 </div>
               </div>
 
