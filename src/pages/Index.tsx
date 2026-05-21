@@ -283,7 +283,7 @@ export default function Index() {
               ✨ Handmade with love ✨
             </div>
             <h1 style={{ fontFamily: "'Pacifico', cursive" }} className="text-5xl sm:text-6xl mb-4 leading-tight">
-              <span className="shimmer-text">Slime Shop</span>
+              <span className="shimmer-text">SQUISHALISH</span>
             </h1>
             <p className="text-gray-500 text-lg max-w-md mx-auto font-semibold mb-6">
               Squishy, stretchy, satisfying slimes made by <span className="text-pink-400">Sophia Jayde</span> 💕
